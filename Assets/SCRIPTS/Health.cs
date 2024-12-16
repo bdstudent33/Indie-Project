@@ -1,59 +1,73 @@
-using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI; // Import UI namespace for the slider
+using UnityEngine.UI;
 
 public class HealthSystem : MonoBehaviour
 {
-    public float maxHealth = 100f;  // Maximum health
-    public float currentHealth;     // Current health
-    public Slider healthSlider;     // Reference to the slider UI element
+    public float maxHealth = 100f;
+    public float currentHealth;
+    public Slider healthSlider;
+    public GameOverManager gameOverManager;
+
+    public float damagePerSecond = 15f;
 
     void Start()
     {
-        // Initialize the current health to max health at the start
         currentHealth = maxHealth;
-
-        // Set the slider's max value and current value
         healthSlider.maxValue = maxHealth;
         healthSlider.value = currentHealth;
+
+        if (gameOverManager == null)
+        {
+            gameOverManager = FindObjectOfType<GameOverManager>();
+            if (gameOverManager == null)
+            {
+                Debug.LogError("GameOverManager is not found in the scene!");
+            }
+        }
     }
 
     void Update()
     {
-
-        // Update the slider value to reflect current health
         healthSlider.value = currentHealth;
 
-        // You can add logic here for health reaching 0 (e.g., player death)
-        if (currentHealth <= 0)
+        if (currentHealth <= 0 && !gameOverManager.gameOverScreen.activeSelf)
         {
-            Debug.Log("Player is dead!");
+            gameOverManager.GameOver();
         }
     }
 
-    // Function to take damage
     public void TakeDamage(float damage)
     {
         currentHealth -= damage;
         if (currentHealth < 0)
         {
-            currentHealth = 0;  // Prevent health from going below 0
+            currentHealth = 0;
         }
 
-        // Update slider after taking damage
         healthSlider.value = currentHealth;
     }
 
-    // Function to heal the player
-    public void Heal(float healingAmount)
+    private void OnTriggerStay(Collider other)
     {
-        currentHealth += healingAmount;
+        if (other.CompareTag("Enemy"))
+        {
+            TakeDamage(damagePerSecond * Time.deltaTime);
+        }
+        else if (other.CompareTag("HealthPickup"))
+        {
+            Heal(25f);
+            Destroy(other.gameObject);
+        }
+    }
+
+    public void Heal(float amount)
+    {
+        currentHealth += amount;
         if (currentHealth > maxHealth)
         {
-            currentHealth = maxHealth;  // Prevent health from exceeding maxHealth
+            currentHealth = maxHealth;
         }
 
-        // Update slider after healing
         healthSlider.value = currentHealth;
     }
 }

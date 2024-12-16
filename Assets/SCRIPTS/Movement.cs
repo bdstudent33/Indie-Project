@@ -1,50 +1,120 @@
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class SimplePlayerMovement : MonoBehaviour
 {
-    public float moveSpeed = 5f; // Speed of the player
-    public float cameraHeight = 10f; // Height at which the camera follows the player
-    public float cameraDistance = 5f; // Distance behind the player for the camera
+    public float moveSpeed = 5f;
+    public float rotationSpeed = 100f;
+    public float cameraHeight = 10f;
+    public float cameraDistance = 5f;
+    public float gravity = -9.81f;
+    public float jumpHeight = 0f;
+
+    public GameObject projectilePrefab;
+    public float projectileSpeed = 10f;
+    public float fireCooldown = 1f;
 
     private CharacterController characterController;
     private Camera playerCamera;
+    private bool canFire = true;
+
+    private Vector3 velocity;
+    private float initialYPosition;
 
     void Start()
     {
-        characterController = GetComponent<CharacterController>(); // Get the CharacterController component
-        playerCamera = Camera.main; // Get the main camera
+        characterController = GetComponent<CharacterController>();
+        playerCamera = Camera.main;
+        initialYPosition = transform.position.y;
     }
 
     void Update()
     {
         MovePlayer();
         FollowCamera();
+
+        if (Input.GetKeyDown(KeyCode.Space) && canFire)
+        {
+            FireProjectile();
+            StartCoroutine(FireCooldown());
+        }
     }
 
     void MovePlayer()
     {
-        // Get the input for horizontal and vertical movement (WASD or arrow keys)
-        float moveDirectionX = Input.GetAxis("Horizontal"); // A/D keys for left/right movement (A = -1, D = 1)
-        float moveDirectionZ = Input.GetAxis("Vertical"); // W/S keys for forward/backward movement (W = 1, S = -1)
+        float moveDirectionZ = Input.GetAxis("Vertical");
+        Vector3 move = transform.forward * moveDirectionZ;
 
-        // Create a movement vector using the input
-        Vector3 move = transform.right * moveDirectionX + transform.forward * moveDirectionZ; // Combine movement
+        if (characterController.isGrounded)
+        {
+            velocity.y = 0;
+        }
+        else
+        {
+            velocity.y += gravity * Time.deltaTime;
+        }
 
-        // Apply movement to the character
-        characterController.Move(move * moveSpeed * Time.deltaTime); // Move the player
+        characterController.Move(move * moveSpeed * Time.deltaTime);
+
+        float rotateDirection = Input.GetAxis("Horizontal");
+        if (rotateDirection != 0)
+        {
+            float rotationAmount = rotateDirection * rotationSpeed * Time.deltaTime;
+            transform.Rotate(0, rotationAmount, 0);
+        }
+
+        characterController.Move(velocity * Time.deltaTime);
+
+        transform.position = new Vector3(transform.position.x, initialYPosition, transform.position.z);
     }
 
     void FollowCamera()
     {
-        // Update camera's position relative to the player (above and behind)
         Vector3 cameraPosition = transform.position + Vector3.up * cameraHeight - transform.forward * cameraDistance;
-
-        // Set the camera's position
         playerCamera.transform.position = cameraPosition;
-
-        // Make the camera look at the player
         playerCamera.transform.LookAt(transform.position);
     }
+
+    void FireProjectile()
+    {
+        if (projectilePrefab != null)
+        {
+            float offsetDistance = 1.5f;
+            Vector3 spawnPosition = transform.position + transform.forward * offsetDistance;
+
+            GameObject projectile = Instantiate(projectilePrefab, spawnPosition, transform.rotation);
+
+            Rigidbody rb = projectile.GetComponent<Rigidbody>();
+            if (rb != null)
+            {
+                rb.velocity = transform.forward * projectileSpeed;
+            }
+
+            projectile.AddComponent<Projectile>();
+        }
+    }
+
+    IEnumerator FireCooldown()
+    {
+        canFire = false;
+        yield return new WaitForSeconds(fireCooldown);
+        canFire = true;
+    }
+
+    public class Projectile : MonoBehaviour
+    {
+        private void OnCollisionEnter(Collision collision)
+        {
+            if (collision.gameObject.CompareTag("Enemy"))
+            {
+                EnemyHealth enemyHealth = collision.gameObject.GetComponent<EnemyHealth>();
+                if (enemyHealth != null)
+                {
+                    enemyHealth.TakeDamage(1);
+                }
+            }
+            Destroy(gameObject);
+        }
+    }
 }
+

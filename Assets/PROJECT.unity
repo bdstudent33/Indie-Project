@@ -1850,8 +1850,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   moveSpeed: 5
+  rotationSpeed: 100
   cameraHeight: 10
   cameraDistance: 5
+  gravity: -9.81
+  jumpHeight: 0
+  projectilePrefab: {fileID: 0}
+  projectileSpeed: 10
+  fireCooldown: 1
 --- !u!65 &2088207903
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -1979,6 +1985,8 @@ MonoBehaviour:
   maxHealth: 100
   currentHealth: 100
   healthSlider: {fileID: 2001959439}
+  gameOverManager: {fileID: 0}
+  damagePerSecond: 15
 --- !u!114 &2088207909
 MonoBehaviour:
   m_ObjectHideFlags: 0

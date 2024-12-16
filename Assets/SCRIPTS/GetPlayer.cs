@@ -4,18 +4,25 @@ using UnityEngine;
 
 public class MoveToPlayer : MonoBehaviour
 {
-    public Transform player; // Reference to the player's transform
-    public float moveSpeed = 5f; // Speed at which the object moves towards the player
-    public float detectionRange = 10f; // Distance within which the object will start moving
+    public Transform player;
+    public float moveSpeed = 5f;
+    public float detectionRange = 10f;
+
+    private float initialYPosition;
+    private Camera mainCamera;
+
+    void Start()
+    {
+        initialYPosition = transform.position.y;
+        mainCamera = Camera.main;
+    }
 
     void Update()
     {
         if (player != null)
         {
-            // Check the distance between the object and the player
             float distanceToPlayer = Vector3.Distance(transform.position, player.position);
 
-            // Move towards the player only if the distance is less than the detection range
             if (distanceToPlayer < detectionRange)
             {
                 MoveTowardsPlayer();
@@ -25,13 +32,22 @@ public class MoveToPlayer : MonoBehaviour
 
     void MoveTowardsPlayer()
     {
-        // Calculate the direction from the object to the player
         Vector3 direction = player.position - transform.position;
-
-        // Normalize the direction vector to ensure consistent movement speed
+        direction.y = 0;
         direction.Normalize();
 
-        // Move the object towards the player
         transform.position += direction * moveSpeed * Time.deltaTime;
+        transform.position = new Vector3(transform.position.x, initialYPosition, transform.position.z);
+        FaceCamera();
+    }
+
+    void FaceCamera()
+    {
+        if (mainCamera != null)
+        {
+            Vector3 directionToCamera = mainCamera.transform.position - transform.position;
+            directionToCamera.y = 0;
+            transform.rotation = Quaternion.LookRotation(directionToCamera);
+        }
     }
 }
